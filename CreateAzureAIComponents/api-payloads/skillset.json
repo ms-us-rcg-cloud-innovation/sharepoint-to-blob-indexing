@@ -1,0 +1,81 @@
+{
+  "@odata.context": "https://SEARCH_SERVICE_NAME.search.windows.net/$metadata#skillsets/$entity",
+  "@odata.etag": "\"0x8DC59DAEE959E97\"",
+  "name": "SKILLSET_NAME",
+  "description": "Created from json edit",
+  "skills": [
+    {
+      "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
+      "name": "#1",
+      "description": "Split skill to chunk documents",
+      "context": "/document",
+      "defaultLanguageCode": "en",
+      "textSplitMode": "pages",
+      "maximumPageLength": 1000,
+      "pageOverlapLength": 450,
+      "maximumPagesToTake": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/content"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "textItems",
+          "targetName": "chunks"
+        }
+      ]
+    },
+    {
+      "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+      "name": "#3",
+      "description": null,
+      "context": "/document/chunks/*",
+      "resourceUri": "OPENAI_ENDPOINT",
+      "apiKey": "OPENAI_API_KEY",
+      "deploymentId": "EMBEDDINGS_MODEL",
+      "inputs": [
+        {
+          "name": "text",
+          "source": "/document/chunks/*"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "embedding",
+          "targetName": "vector"
+        }
+      ],
+      "authIdentity": null
+    }
+  ],
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "INDEX_NAME",
+        "parentKeyFieldName": "ParentKey",
+        "sourceContext": "/document/chunks/*",
+        "mappings": [
+          {
+            "name": "sourceuri",
+            "source": "/document/sourceuri"
+          },
+          {
+            "name": "chunk",
+            "source": "/document/chunks/*"
+          },
+          {
+            "name": "chunkVector",
+            "source": "/document/chunks/*/vector"
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "projectionMode": "skipIndexingParentDocuments"
+    }
+  },
+  "knowledgeStore": null,
+  "encryptionKey": null
+}

@@ -1,0 +1,13 @@
+name: sp-to-blob
+infra:
+    provider: "bicep"
+hooks:
+  predeploy:
+    shell: pwsh
+    continueOnError: false
+    interactive: false
+    run: ./scripts/DeployLogicApps.ps1
+workflows:
+  up:
+  - azd: provision
+  - azd: deploy --all

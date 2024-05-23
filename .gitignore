@@ -1,0 +1,7 @@
+.$architecture*
+.vscode
+__blobstorage__
+__azurite*
+.vs
+output
+local.settings.json

@@ -1,0 +1,209 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "workflows_name": {
+            "defaultValue": "sp-file-to-blob",
+            "type": "String"
+        },
+        "location": {
+            "defaultValue": "eastus",
+            "type": "String"
+        },
+        "subscription_Id": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "sharepoint_site_url": {
+            "defaultValue": "https://[tenant].sharepoint.com/sites/[sitename]",
+            "type": "String"
+        },
+        "connections_sharepointonline_externalid": {
+            "defaultValue": "",
+            "type": "String"
+        },
+        "connections_azureblobstorage_externalid": {
+            "defaultValue": "",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('workflows_name')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "actions": {
+                        "Create_SAS_URI_by_path_(V2)": {
+                            "inputs": {
+                                "body": {
+                                    "Permissions": "Read,Write"
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['azureblobstorage']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/v2/datasets/@{encodeURIComponent(parameters('storage_account_name'))}/CreateSharedLinkByPath",
+                                "queries": {
+                                    "path": "/@{parameters('storage_account_container_name')}/@{variables('file_name')}"
+                                }
+                            },
+                            "runAfter": {
+                                "Create_blob_(V2)": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "ApiConnection"
+                        },
+                        "Create_blob_(V2)": {
+                            "inputs": {
+                                "body": "@body('Get_file_content')",
+                                "headers": {
+                                    "ReadFileMetadataFromServer": true
+                                },
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['azureblobstorage']['connectionId']"
+                                    }
+                                },
+                                "method": "post",
+                                "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent(parameters('storage_account_name')))}/files",
+                                "queries": {
+                                    "folderPath": "/@{parameters('storage_account_container_name')}",
+                                    "name": "@variables('file_name')",
+                                    "queryParametersSingleEncoded": true
+                                }
+                            },
+                            "runAfter": {
+                                "Init_Filename": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "runtimeConfiguration": {
+                                "contentTransfer": {
+                                    "transferMode": "Chunked"
+                                }
+                            },
+                            "type": "ApiConnection"
+                        },
+                        "Get_file_content": {
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('@{parameters('sharepoint_site_url')}'))}/files/@{encodeURIComponent(triggerBody()?['{Identifier}'])}/content",
+                                "queries": {
+                                    "inferContentType": true
+                                }
+                            },
+                            "runAfter": {},
+                            "type": "ApiConnection"
+                        },
+                        "HTTP_Update_Blob_Metadata": {
+                            "inputs": {
+                                "headers": {
+                                    "x-ms-date": "@{utcNow()}",
+                                    "x-ms-meta-sourceuri": "@{triggerBody()?['{Link}']}",
+                                    "x-ms-version": "2024-05-04"
+                                },
+                                "method": "PUT",
+                                "uri": "@{body('Create_SAS_URI_by_path_(V2)')?['WebUrl']}&comp=metadata"
+                            },
+                            "runAfter": {
+                                "Create_SAS_URI_by_path_(V2)": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "runtimeConfiguration": {
+                                "contentTransfer": {
+                                    "transferMode": "Chunked"
+                                }
+                            },
+                            "type": "Http"
+                        },
+                        "Init_Filename": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "file_name",
+                                        "type": "string",
+                                        "value": "@triggerBody()?['{FilenameWithExtension}']"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Get_file_content": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        }
+                    },
+                    "contentVersion": "1.0.0.0",
+                    "outputs": {},
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "storage_account_container_name": {
+                            "type": "String"
+                        },
+                        "storage_account_name": {
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "When_a_file_is_created_or_modified_(properties_only)": {
+                            "evaluatedRecurrence": {
+                                "frequency": "Minute",
+                                "interval": 3
+                            },
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                    }
+                                },
+                                "method": "get",
+                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('@{parameters('sharepoint_site_url')}'))}/tables/@{encodeURIComponent(encodeURIComponent('9243a0e6-0d1e-4399-8e0e-3cc889515ac9'))}/onupdatedfileitems"
+                            },
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 3
+                            },
+                            "splitOn": "@triggerBody()?['value']",
+                            "type": "ApiConnection"
+                        }
+                    }
+                },
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "azureblobstorage": {
+                                "connectionId": "[parameters('connections_azureblobstorage_externalid')]",
+                                "connectionName": "azureblobstorage",
+                                "id": "/subscriptions/@{parameters('subscription_id')}/providers/Microsoft.Web/locations/@{parameters('location')}/managedApis/azureblob"
+                            },
+                            "sharepointonline": {
+                                "connectionId": "[parameters('connections_sharepointonline_externalid')]",
+                                "connectionName": "sharepointonline",
+                                "id": "/subscriptions/@{parameters('subscription_id')}/providers/Microsoft.Web/locations/@{parameters('location')}/managedApis/sharepointonline"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
