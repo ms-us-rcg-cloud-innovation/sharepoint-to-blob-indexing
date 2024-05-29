@@ -10,61 +10,128 @@ param environmentName string
 param location string = resourceGroup().location
 
 @minLength(1)
-@description('Name of existing resource group')
-param resourceGroupName string
+@description('Tenant Id for MS Graph app registration')
+param tenantId string
 
-var abbrs = loadJsonContent('./abbreviations.json')
+@minLength(1)
+@description('Client Id for MS Graph app registration')
+param clientId string
+
+@secure()
+@minLength(1)
+@description('Client Secret for MS Graph app registration')
+param clientSecret string
+
+@minLength(1)
+@description('Sharepoint site id')
+param sharepointSiteId string
 
 var tags = {
   'azd-env-name': environmentName
 }
 
+var storageAccountConnStringSecretName = 'sa-conn-string'
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
-module loggingDeployment 'modules/logging.bicep' = {
-  name: 'logging-deployment'
-  params: {
-    appInsightsName: 'ain-${resourceToken}'
-    logAnalyticsWorkspaceName: 'law-${resourceToken}'
-    location: location
-  }
-}
-
-module keyVaultDeployment 'modules/keyvault.bicep' = {
-  name: 'key-vault-deployment'
-  params: {
-    keyVaultName: '${abbrs.keyVaultVaults}${resourceToken}' 
-    logAnalyticsWorkspaceName: loggingDeployment.outputs.logAnalyticsWorkspaceName
-    location: location
-    managedIdentityName: managedIdentityDeployment.outputs.managedIdentityName
-  }
-}
-
-module managedIdentityDeployment 'modules/managedidentity.bicep' = {
+module managedIdentity 'modules/managedidentity.bicep' = {
   name: 'managed-identity-deployment'
   params: {
     location: location
-    managedIdentityName: '${abbrs.managedIdentityUserAssignedIdentities}${resourceToken}'
+    managedIdentityName: 'id-${resourceToken}'
+    tags: tags
   }
 }
 
-module logicAppDeployment 'modules/logicapp.bicep' = {
-  name: 'logic-app-deployment'
+module logging 'modules/logging.bicep' = {
+  name: 'logging-deployment'
   params: {
-    appInsightsName: loggingDeployment.outputs.appInsightsName
-    logicAppName: '${abbrs.logicWorkflows}${resourceToken}'
-    appServicePlanName: '${abbrs.webSitesAppService}${resourceToken}'
-    keyVaultName: keyVaultDeployment.outputs.keyVaultName
+    appInsightsName: 'appi-${resourceToken}'
+    logAnalyticsWorkspaceName: 'law-${resourceToken}'
     location: location
-    logAnalyticsWorkspaceName: loggingDeployment.outputs.logAnalyticsWorkspaceName
-    managedIdentityName: managedIdentityDeployment.outputs.managedIdentityName
-    logicAppStorageAccountConnectionStringSecretName: 'logic-app-storage-account-connection-string'
-    logicAppStorageAccountName: '${abbrs.storageStorageAccounts}${resourceToken}'
+    tags: tags
   }
 }
 
+module keyVault 'modules/keyvault.bicep' = {
+  name: 'key-vault-deployment'
+  dependsOn: [
+    managedIdentity
+  ]
+  params: {
+    keyVaultName: 'kv${resourceToken}'
+    tenantId: tenantId
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+  }
+}
+
+module storageAccount 'modules/storage.bicep' = {
+  name: 'storage-account-deployment'
+  params: {
+    name: 'sa${resourceToken}'
+    location: location
+    tags: tags
+    keyVaultName: keyVault.outputs.keyVaultName
+    connStringSecretName: storageAccountConnStringSecretName
+  }
+}
+
+module logicApp 'modules/logicapp.bicep' = {
+  name: 'logic-app-deployment'
+  dependsOn: [
+    managedIdentity
+  ]
+  params: {
+    name: 'logic-${resourceToken}'
+    appServicePlanName: 'asp-logic-${resourceToken}'
+    appInsightsName: logging.outputs.appInsightsName
+    keyVaultName: keyVault.outputs.keyVaultName
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    storageAcctConnStringName: storageAccountConnStringSecretName
+    fileShareName: storageAccount.outputs.fileShareName
+  }
+}
+
+module functionApp 'modules/functionapp.bicep' = {
+  name: 'function-app-deployment'
+  dependsOn: [
+    managedIdentity
+  ]
+  params: {
+    name: 'func-${resourceToken}'
+    appServicePlanName: 'asp-func-${resourceToken}'
+    appInsightsName: logging.outputs.appInsightsName
+    keyVaultName: keyVault.outputs.keyVaultName
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    storageAcctConnStringName: storageAccountConnStringSecretName
+    fileShareName: storageAccount.outputs.fileShareName
+    tenantId: tenantId 
+    clientId: clientId 
+    clientSecret: clientSecret
+    storageAcctContainerName: storageAccount.outputs.blobContainerName
+    sharepointSiteId: sharepointSiteId
+  }
+}
+
+output AZURE_RESOURCE_GROUP_NAME string = resourceGroup().name
 output AZURE_LOCATION string = location
-output AZURE_TENANT_ID string = tenant().tenantId
+output AZURE_TENANT_ID string = tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
-output AZURE_RESOURCE_GROUP_NAME string =  resourceGroupName
-output AZURE_LOGIC_APP_NAME string = logicAppDeployment.outputs.logicAppName
+output AZURE_LOGIC_APP_NAME string = logicApp.outputs.logicAppName
+output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.functionAppName
+output AZURE_STORAGE_ACCOUNT_NAME string = storageAccount.outputs.storageAccountName
+output AZURE_STORAGE_ACCOUNT_FILE_SHARE_NAME string = storageAccount.outputs.fileShareName
+output AZURE_STORAGE_ACCOUNT_BLOB_CONTAINER_NAME string = storageAccount.outputs.blobContainerName
+output AZURE_KEY_VAULT_NAME string = keyVault.outputs.keyVaultName
+output AZURE_APP_INSIGHTS_NAME string = logging.outputs.appInsightsName
+output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = logging.outputs.logAnalyticsWorkspaceName
+output AZURE_MANAGED_IDENTITY_NAME string = managedIdentity.outputs.managedIdentityName
+

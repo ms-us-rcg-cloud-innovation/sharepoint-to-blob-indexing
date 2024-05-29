@@ -7,6 +7,12 @@ hooks:
     continueOnError: false
     interactive: false
     run: ./scripts/DeployLogicApps.ps1
+services:
+  functionapp:
+    project: ./src/Apps/SharepointToBlobFunctions
+    module: modules/functionapp.bicep
+    language: dotnet
+    host: function
 workflows:
   up:
   - azd: provision

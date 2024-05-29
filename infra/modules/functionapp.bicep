@@ -1,13 +1,23 @@
-param location string
-param appServicePlanName string
 param name string
+param location string
+param tags object
 param managedIdentityName string
-param logAnalyticsWorkspaceName string
+param appServicePlanName string
 param appInsightsName string
+param logAnalyticsWorkspaceName string
 param keyVaultName string
 param fileShareName string
 param storageAcctConnStringName string
-param tags object
+param storageAcctContainerName string
+param tenantId string
+param clientId string
+
+@secure()
+param clientSecret string
+
+param sharepointSiteId string
+
+var clientSecretName = 'app-reg-client-secret'
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2021-09-30-preview' existing = {
   name: managedIdentityName
@@ -28,19 +38,29 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appServicePlanName
   location: location
-  kind: 'elastic'
+  tags: tags
   sku: {
-    name: 'WS1'
+    name: 'B3'
   }
   properties: {
   }
 }
 
-resource logicApp 'Microsoft.Web/sites@2021-02-01' = {
+resource appRegClientSecretSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  parent: keyVault
+  name: clientSecretName
+  properties: {
+    value: clientSecret
+  }
+}
+
+resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   name: name
   location: location
-  kind: 'functionapp,workflowapp'
-  tags: tags
+  kind: 'functionapp'
+  tags: union(tags, {
+    'azd-service-name':'functionapp'
+  })
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -50,42 +70,44 @@ resource logicApp 'Microsoft.Web/sites@2021-02-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     keyVaultReferenceIdentity: managedIdentity.id
-    httpsOnly: true
     siteConfig: {
-      netFrameworkVersion: 'v4.0'
-      functionsRuntimeScaleMonitoringEnabled: false
-      appSettings: [
-
-      ]
+      ftpsState: 'FtpsOnly'
+      minTlsVersion: '1.2'
     }
+    httpsOnly: true
   }
 }
 
-resource logicAppAppConfigSettings 'Microsoft.Web/sites/config@2022-03-01' = {
+resource configSettings 'Microsoft.Web/sites/config@2022-03-01' = {
   name: 'appsettings'
-  parent: logicApp
+  parent: functionApp
   properties: {
-    APP_KIND: 'workflowApp'
     APPINSIGHTS_INSTRUMENTATIONKEY: appInsights.properties.InstrumentationKey
     APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
     ApplicationInsightsAgent_EXTENSION_VERSION: '~3'
     XDT_MicrosoftApplicationInsights_Mode: 'Recommended'
     FUNCTIONS_EXTENSION_VERSION: '~4'
     AzureWebJobsStorage: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAcctConnStringName})'
-    FUNCTIONS_WORKER_RUNTIME: 'node'
+    FUNCTIONS_WORKER_RUNTIME: 'dotnet-isolated'
+    WEBSITE_RUN_FROM_PACKAGE: '1'
     WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAcctConnStringName})'
     WEBSITE_CONTENTSHARE: fileShareName
+    AZURE_TENANT_ID: tenantId 
+    AZURE_CLIENT_ID: clientId 
+    AZURE_CLIENT_SECRET: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${clientSecretName})'
+    SHAREPOINT_SITE_ID: sharepointSiteId
+    AZURE_STORAGE_CONTAINER_NAME: storageAcctContainerName
   }
 }
 
-resource diagnosticSettings 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' = {
-  name: 'Logging'
-  scope: logicApp
+resource diagSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  scope: functionApp
+  name: 'diag-${functionApp.name}'
   properties: {
     workspaceId: logAnalyticsWorkspace.id
     logs: [
       {
-        category: 'WorkflowRuntime'
+        category: 'FunctionAppLogs'
         enabled: true
       }
     ]
@@ -98,4 +120,4 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticsettings@2017-05-01-pr
   }
 }
 
-output logicAppName string = logicApp.name
+output functionAppName string = functionApp.name

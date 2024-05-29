@@ -8,7 +8,42 @@ This repository contains code and instructions for indexing files and pages from
 
 ## Setup
 
-Coming soon
+First, establish required environment variables:
+
+```powershell
+$env:AZURE_ENV_NAME="sptoblob"
+$env:AZURE_CLIENT_ID="<value>"
+$env:AZURE_TENANT_ID="<value>"
+$env:AZURE_CLIENT_SECRET="<value>"
+$env:SHAREPOINT_SITE_ID="<value>"
+```
+
+This project the [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) to quickly deploy and tear down the resources and application files in Azure for demo purposes.
+
+To get started, authenticate with an Azure Subscription.
+
+```powershell
+azd auth login
+```
+
+Alternatively, you can login to both CLIs via a service principal using the TenantId, ClientId, and Client secret. More information on that can be found at the following:
+
+* [Azure CLI login with Service Princpal](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-service-principal)
+* [Azure Developer CLI Login](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/reference#azd-auth-login)
+
+This project is scoped to deploy to an existing Resource Group. To [allow this functionality with AZD](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments), run the following config command:
+
+```powershell
+azd config set alpha.resourceGroupDeployments on
+```
+
+Finally, to provision the necessary Azure resoruces and deploy the application, run the UP command:
+
+```powershell
+azd up
+```
+
+Follow the prompts to name the environment (short project name like 'sptoblob') and select the necessary Subscription, Location, and Resource Group for deployment.
 
 ## Azure Resource Prerequisites
 
@@ -52,6 +87,14 @@ AZURE_STORAGE_CONTAINER_NAME=#<name of blob container for index>
 ```
 
 There are [few options for deploying the Azure Function available](https://learn.microsoft.com/en-us/azure/azure-functions/functions-deployment-technologies?tabs=windows).
+
+## Clean Up Azure Resources
+
+To remove the provisioned Resources run the following AZD command:
+
+```powershell
+azd down --force --purge
+```
 
 ## Coming Soon
 
