@@ -6,7 +6,7 @@ This repository contains code and instructions for indexing files and pages from
 
 ![Architecture](/assets/architecture.png)
 
-## Setup
+## Setup and Deploy
 
 First, establish required environment variables:
 

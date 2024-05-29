@@ -44,6 +44,18 @@ resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/container
   properties: {}
 }
 
+resource queueServices 'Microsoft.Storage/storageAccounts/queueServices@2023-01-01' = {
+  name: 'default'
+  parent: storageAccount
+  properties: {}
+}
+
+resource queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2022-09-01' = {
+  parent: queueServices
+  name: 'sharepoint-pages'
+  properties: {}
+}
+
 resource storageAccountConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
   parent: keyVault
   name: connStringSecretName
