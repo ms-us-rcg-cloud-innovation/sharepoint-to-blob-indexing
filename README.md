@@ -1,6 +1,6 @@
-# Azure AI Search Indexing Sharepoint Files via Storage Account Blobs
+# Index Sharepoint Files and Pages using Azure AI Search and Storage Accounts
 
-This repository contains code and instructions for indexing files and pages from a SharePoint site into Azure AI Search using a Logic App and Function App and indexed from a Storage Account.
+This repository contains code and instructions for indexing files and pages from SharePoint into Azure AI Search using a Logic App and Function App and indexed from a Storage Account.
 
 ## Architecture
 
