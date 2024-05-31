@@ -1,5 +1,41 @@
 {
-  "managedApiConnections": {},
-  "serviceProviderConnections": {
+  "managedApiConnections": {
+      "sharepointonline": {
+          "api": {
+              "id": "@appsetting('SHAREPOINT_CONNECTION_API_ID')"
+          },
+          "authentication": {
+              "type": "ManagedServiceIdentity"
+          },
+          "connection": {
+              "id": "@appsetting('SHAREPOINT_CONNECTION_RESOURCE_ID')"
+          },
+          "connectionRuntimeUrl": "@appsetting('SHAREPOINT_CONNECTION_RUNTIME_URL')"
+      },
+      "azurequeues": {
+        "api": {
+            "id": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_API_ID')"
+        },
+        "authentication": {
+            "type": "ManagedServiceIdentity"
+        },
+        "connection": {
+            "id": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_RESOURCE_ID')"
+        },
+        "connectionRuntimeUrl": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_RUNTIME_URL')"
+    },
+    "azureblob": {
+      "api": {
+          "id": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_API_ID')"
+      },
+      "authentication": {
+          "type": "ManagedServiceIdentity"
+      },
+      "connection": {
+          "id": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_RESOURCE_ID')"
+      },
+      "connectionRuntimeUrl": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_RUNTIME_URL')"
   }
+  },
+  "serviceProviderConnections": {}
 }

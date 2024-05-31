@@ -9,6 +9,13 @@ param fileShareName string
 param storageAcctConnStringName string
 param tags object
 
+param sharepointSiteUrl string
+param sharepointListName string
+
+param sharepointConnectionName string
+param azureQueueConnectionName string
+param azureBlobConnectionName string
+
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2021-09-30-preview' existing = {
   name: managedIdentityName
 }
@@ -23,6 +30,18 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
   name: keyVaultName
+}
+
+resource sharepointConnection 'Microsoft.Web/connections@2016-06-01' existing = {
+  name: sharepointConnectionName
+}
+
+resource azureQueueConnection 'Microsoft.Web/connections@2016-06-01' existing = {
+  name: azureQueueConnectionName
+}
+
+resource azureBlobConnection 'Microsoft.Web/connections@2016-06-01' existing = {
+  name: azureBlobConnectionName
 }
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
@@ -75,6 +94,17 @@ resource logicAppAppConfigSettings 'Microsoft.Web/sites/config@2022-03-01' = {
     FUNCTIONS_WORKER_RUNTIME: 'node'
     WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAcctConnStringName})'
     WEBSITE_CONTENTSHARE: fileShareName
+    SHAREPOINT_SITE_URL: sharepointSiteUrl
+    SHAREPOINT_LIST_NAME: sharepointListName  
+    SHAREPOINT_CONNECTION_API_ID: sharepointConnection.properties.api.id
+    SHAREPOINT_CONNECTION_RESOURCE_ID: sharepointConnection.id
+    SHAREPOINT_CONNECTION_RUNTIME_URL: sharepointConnection.properties.connectionRuntimeUrl
+    AZURE_STORAGE_ACCOUNT_QUEUE_RESOURCE_ID: azureQueueConnection.id
+    AZURE_STORAGE_ACCOUNT_QUEUE_APP_ID: azureQueueConnection.properties.api.id
+    AZURE_STORAGE_ACCOUNT_QUEUE_RUNTIME_URL: azureQueueConnection.properties.connectionRuntimeUrl
+    AZURE_STORAGE_ACCOUNT_BLOB_RESOURCE_ID: azureBlobConnection.id
+    AZURE_STORAGE_ACCOUNT_BLOB_APP_ID: azureBlobConnection.properties.api.id
+    AZURE_STORAGE_ACCOUNT_BLOB_RUNTIME_URL: azureBlobConnection.properties.connectionRuntimeUrl
   }
 }
 

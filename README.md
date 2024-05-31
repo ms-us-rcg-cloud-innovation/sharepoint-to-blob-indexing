@@ -12,10 +12,15 @@ First, establish required environment variables:
 
 ```powershell
 $env:AZURE_ENV_NAME="sptoblob"
+$env:AZURE_LOCATION="eastus"
 $env:AZURE_CLIENT_ID="<value>"
 $env:AZURE_TENANT_ID="<value>"
 $env:AZURE_CLIENT_SECRET="<value>"
 $env:SHAREPOINT_SITE_ID="<value>"
+$env:SHAREPOINT_SITE_URL="<value>"
+$env:SHAREPOINT_LIST_NAME="<value>"
+$env:SHAREPOINT_USERNAME="<value>"
+$env:SHAREPOINT_PASSWORD="<value>"
 ```
 
 This project the [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) to quickly deploy and tear down the resources and application files in Azure for demo purposes.

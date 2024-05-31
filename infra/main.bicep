@@ -1,13 +1,16 @@
-targetScope = 'resourceGroup'
+targetScope = 'subscription'
 
 @minLength(1)
 @maxLength(64)
 @description('Name of the the environment which is used to generate a short unique hash used in all resources.')
 param environmentName string
 
+@description('Resource group name, defaults to rg-env')
+param resourceGroupName string = 'rg-${environmentName}'
+
 @minLength(1)
 @description('Primary location for all resources')
-param location string = resourceGroup().location
+param location string
 
 @minLength(1)
 @description('Tenant Id for MS Graph app registration')
@@ -26,6 +29,22 @@ param clientSecret string
 @description('Sharepoint site id')
 param sharepointSiteId string
 
+@minLength(1)
+@description('Sharepoint site url')
+param sharepointSiteUrl string
+
+@minLength(1)
+@description('Sharepoint list name')
+param sharepointListName string
+
+@minLength(1)
+param sharepointUserName string
+
+@secure()
+@minLength(1)
+param sharepointPassword string
+
+
 var tags = {
   'azd-env-name': environmentName
 }
@@ -33,8 +52,15 @@ var tags = {
 var storageAccountConnStringSecretName = 'sa-conn-string'
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
+resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: resourceGroupName
+  location: location
+  tags: tags
+}
+
 module managedIdentity 'modules/managedidentity.bicep' = {
   name: 'managed-identity-deployment'
+  scope: rg
   params: {
     location: location
     managedIdentityName: 'id-${resourceToken}'
@@ -44,6 +70,7 @@ module managedIdentity 'modules/managedidentity.bicep' = {
 
 module logging 'modules/logging.bicep' = {
   name: 'logging-deployment'
+  scope: rg
   params: {
     appInsightsName: 'appi-${resourceToken}'
     logAnalyticsWorkspaceName: 'law-${resourceToken}'
@@ -54,6 +81,7 @@ module logging 'modules/logging.bicep' = {
 
 module keyVault 'modules/keyvault.bicep' = {
   name: 'key-vault-deployment'
+  scope: rg
   dependsOn: [
     managedIdentity
   ]
@@ -69,17 +97,76 @@ module keyVault 'modules/keyvault.bicep' = {
 
 module storageAccount 'modules/storage.bicep' = {
   name: 'storage-account-deployment'
+  scope: rg
   params: {
     name: 'sa${resourceToken}'
     location: location
     tags: tags
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
     keyVaultName: keyVault.outputs.keyVaultName
     connStringSecretName: storageAccountConnStringSecretName
   }
 }
 
+module sharepointConnection 'modules/connection.bicep' = {
+  name: 'sharepoint-connection-deployment'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    apiName: 'sharepointonline'
+    connectionName: 'sharepointonline-5'
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    parameters: {
+      UserName: sharepointUserName
+      Password: sharepointPassword
+    }
+  }
+}
+
+module azureQueueConnection 'modules/connection.bicep' = {
+  name: 'azure-queue-connection-deployment'
+  scope: rg
+  dependsOn: [
+    storageAccount
+    keyVault
+  ]
+  params: {
+    location: location
+    tags: tags
+    apiName: 'azurequeues'
+    connectionName: 'azurequeues-6'
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    parameters: {
+      StorageAccount: storageAccount.outputs.storageAccountName
+      SharedKey: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAccountConnStringSecretName})'
+    }
+  }
+}
+
+module azureBlobConnection 'modules/connection.bicep' = {
+  name: 'azure-blob-connection-deployment'
+  scope: rg
+  dependsOn: [
+    storageAccount
+    keyVault
+  ]
+  params: {
+    location: location
+    tags: tags
+    apiName: 'azureblob'
+    connectionName: 'azureblob-6'
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    parameters: {
+      AccountName: storageAccount.outputs.storageAccountName
+      AccessKey: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAccountConnStringSecretName})'
+    }
+  }
+}
+
 module logicApp 'modules/logicapp.bicep' = {
   name: 'logic-app-deployment'
+  scope: rg
   dependsOn: [
     managedIdentity
   ]
@@ -94,11 +181,17 @@ module logicApp 'modules/logicapp.bicep' = {
     managedIdentityName: managedIdentity.outputs.managedIdentityName
     storageAcctConnStringName: storageAccountConnStringSecretName
     fileShareName: storageAccount.outputs.fileShareName
+    sharepointSiteUrl: sharepointSiteUrl
+    sharepointListName: sharepointListName
+    sharepointConnectionName: sharepointConnection.outputs.name
+    azureQueueConnectionName: azureQueueConnection.outputs.name
+    azureBlobConnectionName: azureBlobConnection.outputs.name
   }
 }
 
 module functionApp 'modules/functionapp.bicep' = {
   name: 'function-app-deployment'
+  scope: rg
   dependsOn: [
     managedIdentity
   ]
@@ -121,7 +214,7 @@ module functionApp 'modules/functionapp.bicep' = {
   }
 }
 
-output AZURE_RESOURCE_GROUP_NAME string = resourceGroup().name
+output AZURE_RESOURCE_GROUP_NAME string = rg.name
 output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId

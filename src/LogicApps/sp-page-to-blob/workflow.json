@@ -1,0 +1,95 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Get_Page_Id_from_ETag": {
+                "inputs": "@substring(split(body('Get_file_metadata')?['ETag'], ',')[0], 2, 36)",
+                "runAfter": {
+                    "Get_file_metadata": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose"
+            },
+            "Get_file_metadata": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('@{appsettings('SHAREPOINT_SITE_URL')}'))}/files/@{encodeURIComponent(triggerBody()?['{Identifier}'])}"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Put_a_message_on_a_queue_(V2)": {
+                "inputs": {
+                    "body": "@{outputs('Get_Page_Id_from_ETag')}",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azurequeues']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/storageAccounts/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/queues/@{encodeURIComponent('sharepoint-pages')}/messages"
+                },
+                "runAfter": {
+                    "Get_Page_Id_from_ETag": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_an_item_or_a_file_is_modified": {
+                "evaluatedRecurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('@{appsettings('SHAREPOINT_SITE_URL')}'))}/tables/@{encodeURIComponent(encodeURIComponent('@{appsettings('SHAREPOINT_LIST_NAME')}'))}/onchangeditems"
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "splitOn": "@triggerBody()?['value']",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azurequeues": {
+                    "connectionId": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_RESOURCE_ID')",
+                    "connectionName": "azurequeues",
+                    "id": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_API_ID')"
+                },
+                "sharepointonline": {
+                    "connectionId": "@appsetting('SHAREPOINT_CONNECTION_RESOURCE_ID')",
+                    "connectionName": "sharepointonline",
+                    "id": "@appsetting('SHAREPOINT_CONNECTION_API_ID')"
+                }
+            }
+        }
+    },
+    "kind": "Stateful"
+}
