@@ -36,13 +36,7 @@ Alternatively, you can login to both CLIs via a service principal using the Tena
 * [Azure CLI login with Service Princpal](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-service-principal)
 * [Azure Developer CLI Login](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/reference#azd-auth-login)
 
-This project is scoped to deploy to an existing Resource Group. To [allow this functionality with AZD](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/resource-group-scoped-deployments), run the following config command:
-
-```powershell
-azd config set alpha.resourceGroupDeployments on
-```
-
-Finally, to provision the necessary Azure resoruces and deploy the application, run the UP command:
+To provision the necessary Azure resoruces and deploy the application, run the UP command:
 
 ```powershell
 azd up
