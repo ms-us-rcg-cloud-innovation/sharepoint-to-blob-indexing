@@ -59,7 +59,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 }
 
 module managedIdentity 'modules/managedidentity.bicep' = {
-  name: 'managed-identity-deployment'
+  name: 'managed-identity-${environmentName}-deployment'
   scope: rg
   params: {
     location: location
@@ -69,7 +69,7 @@ module managedIdentity 'modules/managedidentity.bicep' = {
 }
 
 module logging 'modules/logging.bicep' = {
-  name: 'logging-deployment'
+  name: 'logging-${environmentName}-deployment'
   scope: rg
   params: {
     appInsightsName: 'appi-${resourceToken}'
@@ -80,7 +80,7 @@ module logging 'modules/logging.bicep' = {
 }
 
 module keyVault 'modules/keyvault.bicep' = {
-  name: 'key-vault-deployment'
+  name: 'key-vault-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     managedIdentity
@@ -96,7 +96,7 @@ module keyVault 'modules/keyvault.bicep' = {
 }
 
 module storageAccount 'modules/storage.bicep' = {
-  name: 'storage-account-deployment'
+  name: 'storage-account-${environmentName}-deployment'
   scope: rg
   params: {
     name: 'sa${resourceToken}'
@@ -108,14 +108,50 @@ module storageAccount 'modules/storage.bicep' = {
   }
 }
 
+module openAI 'modules/openai.bicep' = {
+  name: 'openai-${environmentName}-deployment'
+  scope: rg
+  params: {
+    name: 'ai-${resourceToken}'
+    location: location
+    tags: tags
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
+  }
+}
+
+module aiModelDeployment  'modules/openaideployment.bicep' = {
+    name: 'ai-model-${environmentName}-deployment'
+    scope: rg
+    dependsOn:[
+      openAI
+    ]
+    params: {
+      openAiName: openAI.outputs.name
+      deploymentName: 'ai-model-${resourceToken}'
+    }
+}
+
+module search 'modules/aisearch.bicep' = {
+  name: 'ai-search-${environmentName}-deployment'
+  scope: rg
+  params: {
+    name: 'ai-search-${resourceToken}'
+    location: location
+    tags: tags
+    managedIdentityName: managedIdentity.outputs.managedIdentityName
+    logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
+  }
+}
+
 module sharepointConnection 'modules/connection.bicep' = {
-  name: 'sharepoint-connection-deployment'
+  name: 'sharepoint-conn-${environmentName}-deployment'
   scope: rg
   params: {
     location: location
     tags: tags
     apiName: 'sharepointonline'
-    connectionName: 'sharepointonline-5'
+    connectionName: 'sharepointonline'
     managedIdentityName: managedIdentity.outputs.managedIdentityName
     parameters: {
       UserName: sharepointUserName
@@ -125,7 +161,7 @@ module sharepointConnection 'modules/connection.bicep' = {
 }
 
 module azureQueueConnection 'modules/connection.bicep' = {
-  name: 'azure-queue-connection-deployment'
+  name: 'azure-queue-conn-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     storageAccount
@@ -135,7 +171,7 @@ module azureQueueConnection 'modules/connection.bicep' = {
     location: location
     tags: tags
     apiName: 'azurequeues'
-    connectionName: 'azurequeues-6'
+    connectionName: 'azurequeues'
     managedIdentityName: managedIdentity.outputs.managedIdentityName
     parameters: {
       StorageAccount: storageAccount.outputs.storageAccountName
@@ -145,7 +181,7 @@ module azureQueueConnection 'modules/connection.bicep' = {
 }
 
 module azureBlobConnection 'modules/connection.bicep' = {
-  name: 'azure-blob-connection-deployment'
+  name: 'azure-blob-conn-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     storageAccount
@@ -155,7 +191,7 @@ module azureBlobConnection 'modules/connection.bicep' = {
     location: location
     tags: tags
     apiName: 'azureblob'
-    connectionName: 'azureblob-6'
+    connectionName: 'azureblob'
     managedIdentityName: managedIdentity.outputs.managedIdentityName
     parameters: {
       AccountName: storageAccount.outputs.storageAccountName
@@ -165,7 +201,7 @@ module azureBlobConnection 'modules/connection.bicep' = {
 }
 
 module logicApp 'modules/logicapp.bicep' = {
-  name: 'logic-app-deployment'
+  name: 'logic-app-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     managedIdentity
@@ -190,7 +226,7 @@ module logicApp 'modules/logicapp.bicep' = {
 }
 
 module functionApp 'modules/functionapp.bicep' = {
-  name: 'function-app-deployment'
+  name: 'function-app-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     managedIdentity
