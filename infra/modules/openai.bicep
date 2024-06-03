@@ -8,6 +8,7 @@ param tags object = {}
 
 param managedIdentityName string
 param logAnalyticsWorkspaceName string
+param keyVaultName string
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = {
   name: managedIdentityName
@@ -15,6 +16,10 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = {
   name: logAnalyticsWorkspaceName
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
+  name: keyVaultName
 }
 
 resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
@@ -84,4 +89,14 @@ resource cogServicesUserRoleAssignment 'Microsoft.Authorization/roleAssignments@
   }
 }
 
+resource openAIKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  parent: keyVault
+  name: 'openai-key'
+  properties: {
+    value: cognitiveServices.listKeys().key1
+  }
+}
+
 output name string = cognitiveServices.name
+output endpoint string = 'https://${cognitiveServices.name}.openai.azure.com'
+output keySecretName string = openAIKeySecret.name

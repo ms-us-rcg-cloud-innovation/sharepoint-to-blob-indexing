@@ -2,7 +2,6 @@ param location string
 param name string
 param tags object
 param keyVaultName string
-param connStringSecretName string
 param managedIdentityName string
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
@@ -61,11 +60,21 @@ resource queue 'Microsoft.Storage/storageAccounts/queueServices/queues@2022-09-0
   properties: {}
 }
 
+var accountKey = storageAccount.listKeys().keys[0].value
+
 resource storageAccountConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
   parent: keyVault
-  name: connStringSecretName
+  name: 'sa-conn-string'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${accountKey}'
+  }
+}
+
+resource storageAccountKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  parent: keyVault
+  name: 'sa-key'
+  properties: {
+    value: accountKey
   }
 }
 
@@ -104,3 +113,6 @@ resource queueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignm
 output storageAccountName string = storageAccount.name
 output fileShareName string = fileShare.name
 output blobContainerName string = blobContainer.name
+output connStringSecretName string = storageAccountConnectionStringSecret.name
+output keySecretName string = storageAccountKeySecret.name
+
