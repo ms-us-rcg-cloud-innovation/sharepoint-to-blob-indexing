@@ -1,41 +1,47 @@
 {
-  "managedApiConnections": {
-      "sharepointonline": {
-          "api": {
-              "id": "@appsetting('SHAREPOINT_CONNECTION_API_ID')"
-          },
-          "authentication": {
-              "type": "ManagedServiceIdentity"
-          },
-          "connection": {
-              "id": "@appsetting('SHAREPOINT_CONNECTION_RESOURCE_ID')"
-          },
-          "connectionRuntimeUrl": "@appsetting('SHAREPOINT_CONNECTION_RUNTIME_URL')"
-      },
-      "azurequeues": {
-        "api": {
-            "id": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_API_ID')"
-        },
-        "authentication": {
-            "type": "ManagedServiceIdentity"
-        },
-        "connection": {
-            "id": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_RESOURCE_ID')"
-        },
-        "connectionRuntimeUrl": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_RUNTIME_URL')"
+    "managedApiConnections": {
+        "sharepointonline": {
+            "api": {
+                "id": "@appsetting('SHAREPOINT_CONNECTION_API_ID')"
+            },
+            "authentication": {
+                "identity": "@appsetting('AZURE_MANAGED_IDENTITY_ID')",
+                "type": "ManagedServiceIdentity"
+            },
+            "connection": {
+                "id": "@appsetting('SHAREPOINT_CONNECTION_RESOURCE_ID')"
+            },
+            "connectionRuntimeUrl": "@appsetting('SHAREPOINT_CONNECTION_RUNTIME_URL')"
+        }
     },
-    "azureblob": {
-      "api": {
-          "id": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_API_ID')"
-      },
-      "authentication": {
-          "type": "ManagedServiceIdentity"
-      },
-      "connection": {
-          "id": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_RESOURCE_ID')"
-      },
-      "connectionRuntimeUrl": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_RUNTIME_URL')"
-  }
-  },
-  "serviceProviderConnections": {}
+    "serviceProviderConnections": {
+        "AzureBlobForIndexing": {
+            "displayName": "AzureBlobForIndexingConnection",
+            "parameterSetName": "ManagedServiceIdentity",
+            "parameterValues": {
+                "authProvider": {
+                    "identity": "@appsetting('AZURE_MANAGED_IDENTITY_ID')",
+                    "Type": "ManagedServiceIdentity"
+                },
+                "blobStorageEndpoint": "@appsetting('AZURE_STORAGE_ACCOUNT_BLOB_ENDPOINT')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/AzureBlob"
+            }
+        },
+        "AzureQueuesForPages": {
+            "displayName": "AzureQueuesForPagesConnection",
+            "parameterSetName": "ManagedServiceIdentity",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity",
+                    "identity": "@appsetting('AZURE_MANAGED_IDENTITY_ID')"
+                },
+                "queueServiceUri": "@appsetting('AZURE_STORAGE_ACCOUNT_QUEUE_ENDPOINT')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/azurequeues"
+            }
+        }
+    }
 }

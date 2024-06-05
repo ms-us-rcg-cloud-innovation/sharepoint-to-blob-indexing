@@ -144,6 +144,7 @@ module aiModelEmbedDeployment  'modules/openaideployment.bicep' = {
   scope: rg
   dependsOn:[
     openAI
+    aiModelGPTDeployment // depends on other model to prevent operation conflicts
   ]
   params: {
     openAiName: openAI.outputs.name
@@ -198,7 +199,7 @@ module searchIndex 'modules/aisearchindex.bicep' = {
   }
 }
 
-module sharepointConnection 'modules/connection.bicep' = {
+module sharepointConnection 'modules/sharepointconnection.bicep' = {
   name: 'sharepoint-conn-${environmentName}-deployment'
   scope: rg
   dependsOn:[
@@ -208,63 +209,19 @@ module sharepointConnection 'modules/connection.bicep' = {
   params: {
     location: location
     tags: tags
-    apiName: 'sharepointonline'
-    connectionName: 'sharepointonline'
     managedIdentityName: managedIdentity.outputs.managedIdentityName
-    nameParamName: 'UserName'
-    nameParamValue: sharepointUserName
-    keyParamName: 'Password'
-    keyParamValue: sharepointPassword
+    username: sharepointUserName
+    password: sharepointPassword
   }
 }
 
-module azureQueueConnection 'modules/connection.bicep' = {
-  name: 'azure-queue-conn-${environmentName}-deployment'
-  scope: rg
-  dependsOn:[
-    keyVault
-    storageAccount
-    managedIdentity
-  ]
-  params: {
-    location: location
-    tags: tags
-    apiName: 'azurequeues'
-    connectionName: 'azurequeues'
-    managedIdentityName: managedIdentity.outputs.managedIdentityName
-    nameParamName: 'StorageAccount'
-    nameParamValue: storageAccount.outputs.storageAccountName
-    keyParamName: 'SharedKey'
-    keyParamValue: kv.getSecret(storageAccount.outputs.keySecretName)
-  }
-}
-
-module azureBlobConnection 'modules/connection.bicep' = {
-  name: 'azure-blob-conn-${environmentName}-deployment'
-  scope: rg
-  dependsOn:[
-    keyVault
-    storageAccount
-    managedIdentity
-  ]
-  params: {
-    location: location
-    tags: tags
-    apiName: 'azureblob'
-    connectionName: 'azureblob'
-    managedIdentityName: managedIdentity.outputs.managedIdentityName
-    nameParamName: 'AccountName'
-    nameParamValue: storageAccount.outputs.storageAccountName
-    keyParamName: 'AccessKey'
-    keyParamValue: kv.getSecret(storageAccount.outputs.keySecretName)
-  }
-}
 
 module logicApp 'modules/logicapp.bicep' = {
   name: 'logic-app-${environmentName}-deployment'
   scope: rg
   dependsOn: [
     managedIdentity
+    storageAccount
   ]
   params: {
     name: 'logic-${resourceToken}'
@@ -275,13 +232,14 @@ module logicApp 'modules/logicapp.bicep' = {
     tags: tags
     logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
     managedIdentityName: managedIdentity.outputs.managedIdentityName
-    storageAcctConnStringName: storageAccount.outputs.connStringSecretName
+    storageAccountName: storageAccount.outputs.storageAccountName
+    storageAccountContainerName: storageAccount.outputs.blobContainerName
     fileShareName: storageAccount.outputs.fileShareName
+    storageAcctConnStringName: storageAccount.outputs.connStringSecretName
     sharepointSiteUrl: sharepointSiteUrl
     sharepointListName: sharepointListName
+    sharepointSiteId: sharepointSiteId
     sharepointConnectionName: sharepointConnection.outputs.name
-    azureQueueConnectionName: azureQueueConnection.outputs.name
-    azureBlobConnectionName: azureBlobConnection.outputs.name
   }
 }
 
@@ -290,6 +248,7 @@ module functionApp 'modules/functionapp.bicep' = {
   scope: rg
   dependsOn: [
     managedIdentity
+    storageAccount
   ]
   params: {
     name: 'func-${resourceToken}'

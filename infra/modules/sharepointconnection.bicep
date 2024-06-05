@@ -1,19 +1,11 @@
-
-param apiName string
-param connectionName string = apiName
-param displayName string = '${connectionName}-connection'
+param connectionName string = 'sharepointonline'
 param location string
 param tags object
 
-// param parameters connParams
-
-param nameParamName string
-param keyParamName string
-
-param nameParamValue string
+param username string
 
 @secure()
-param keyParamValue string
+param password string
 
 param managedIdentityName string
 
@@ -28,12 +20,12 @@ resource connection 'Microsoft.Web/connections@2016-06-01' = {
   kind: 'v2'
   properties: {
     api: {
-      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', location, apiName) 
+      id: subscriptionResourceId('Microsoft.Web/locations/managedApis', location, 'sharepointonline') 
     }
-    displayName: displayName
+    displayName: '${connectionName}-connection'
     parameterValues: {
-      '${nameParamName}' : nameParamValue
-      '${keyParamName}' : keyParamValue
+      UserName : username
+      Password : password
     }
   }
 }
@@ -57,4 +49,3 @@ output name string = connection.name
 output id string = connection.id
 output apiId string = connection.properties.api.id
 output connectionRuntimeUrl string = connection.properties.connectionRuntimeUrl
-

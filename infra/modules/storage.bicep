@@ -115,4 +115,5 @@ output fileShareName string = fileShare.name
 output blobContainerName string = blobContainer.name
 output connStringSecretName string = storageAccountConnectionStringSecret.name
 output keySecretName string = storageAccountKeySecret.name
+output endpoint string = 'https://${storageAccount.name}.blob.${environment().suffixes.storage}'
 
