@@ -33,6 +33,9 @@ namespace SharepointToBlobFunctions
 
                 var pageQueryBuilder = _graphServiceClient.Sites[context.SiteId.ToString()].Pages[context.PageId.ToString()];
 
+                _logger.LogInformation("Processing page with id {pageId} and SiteId {siteId}.", context.PageId, context.SiteId);
+                _logger.LogInformation("Retrieving page details...");
+                
                 var page = await pageQueryBuilder.GetAsync();
                 if (page is null)
                 {
@@ -40,15 +43,14 @@ namespace SharepointToBlobFunctions
                     return;
                 }
 
-                _logger.LogDebug("Page Details:");
-                _logger.LogDebug("Id: {page.Id}", page.Id);
-                _logger.LogDebug("Title: {page.Title}", page.Title);
-                _logger.LogDebug("Name: {page.Name}", page.Name);
-                _logger.LogDebug("Link: {page.WebUrl}", page.WebUrl);
-                _logger.LogDebug("ETag: {page.ETag}", page.ETag);
-
+                _logger.LogInformation("Page Found - Title: {pageTitle}, Name: {pageName}, Link: {pageLink}, ETag: {pageETag}", page.Title, page.Name, page.WebUrl, page.ETag);
+                _logger.LogInformation("Retrieving web parts...");
+                
                 var webPartsResponse = await pageQueryBuilder.GraphSitePage.WebParts.GetAsync();
 
+                _logger.LogInformation("{webPartsCount} Web Parts found.", webPartsResponse?.Value?.Count ?? 0);
+                _logger.LogInformation("Building HTML...");
+                
                 string bodyHtml = await _webPartsHtmlBuilder.BuildHtmlAsync(webPartsResponse?.Value);
 
                 var htmlDoc = new HtmlDocument();
@@ -65,7 +67,11 @@ namespace SharepointToBlobFunctions
 
                 var html = htmlDoc.DocumentNode.WriteTo();
 
+                _logger.LogInformation("Uploading HTML file to blob storage...");
+
                 await _blobContainerClient.UploadHtmlAsync(page, html);
+
+                _logger.LogInformation("HTML file uploaded successfully.");
             }
             catch (Exception ex)
             {

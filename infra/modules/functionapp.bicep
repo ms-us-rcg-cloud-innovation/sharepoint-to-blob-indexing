@@ -92,9 +92,9 @@ resource configSettings 'Microsoft.Web/sites/config@2022-03-01' = {
     WEBSITE_RUN_FROM_PACKAGE: '1'
     WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${storageAcctConnStringName})'
     WEBSITE_CONTENTSHARE: fileShareName
-    AZURE_TENANT_ID: tenantId 
-    AZURE_CLIENT_ID: clientId 
-    AZURE_CLIENT_SECRET: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${clientSecretName})'
+    AZURE_SHAREPOINT_GRAPH_TENANT_ID: tenantId 
+    AZURE_SHAREPOINT_GRAPH_CLIENT_ID: clientId 
+    AZURE_SHAREPOINT_GRAPH_CLIENT_SECRET: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${clientSecretName})'
     SHAREPOINT_SITE_ID: sharepointSiteId
     AZURE_STORAGE_CONTAINER_NAME: storageAcctContainerName
   }

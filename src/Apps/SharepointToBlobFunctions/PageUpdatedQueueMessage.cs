@@ -20,5 +20,10 @@ namespace SharepointToBlobFunctions
 
             return new PageUpdatedContext(pageId, siteId);
         }
+
+        public override string ToString()
+        {
+            return $"PageId: {PageId}, SiteId: {SiteId}";
+        }
     }
 }

@@ -9,25 +9,29 @@ using SharepointToBlobFunctions;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
+    //.ConfigureLogging(logging =>
+    //{
+    
+    //    logging.AddFilter("Microsoft", LogLevel.Warning)
+    //           .AddFilter("System", LogLevel.Warning)
+    //           .AddFilter("SharepointToBlobFunctions", LogLevel.Information);
+    //})
     .ConfigureServices(services => {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        services.AddScoped<ClientSecretCredential>(serviceProvider =>
+        services.AddScoped<GraphServiceClient>(serviceProvider =>
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
-            string tenantId = configuration.GetRequiredValue("AZURE_TENANT_ID");
-            string clientId = configuration.GetRequiredValue("AZURE_CLIENT_ID");
-            string clientSecret = configuration.GetRequiredValue("AZURE_CLIENT_SECRET");
+            string tenantId = configuration.GetRequiredValue("AZURE_SHAREPOINT_GRAPH_TENANT_ID");
+            string clientId = configuration.GetRequiredValue("AZURE_SHAREPOINT_GRAPH_CLIENT_ID");
+            string clientSecret = configuration.GetRequiredValue("AZURE_SHAREPOINT_GRAPH_CLIENT_SECRET");
 
-            return new ClientSecretCredential(tenantId, clientId, clientSecret);
+            return new GraphServiceClient(
+                new ClientSecretCredential(tenantId, clientId, clientSecret),
+                ["https://graph.microsoft.com/.default"]);
         });
-
-        services.AddScoped<GraphServiceClient>(serviceProvider => 
-            new GraphServiceClient(
-                serviceProvider.GetRequiredService<ClientSecretCredential>(), 
-                ["https://graph.microsoft.com/.default"]));
 
         services.AddScoped<BlobServiceClient>(serviceProvider =>
         {

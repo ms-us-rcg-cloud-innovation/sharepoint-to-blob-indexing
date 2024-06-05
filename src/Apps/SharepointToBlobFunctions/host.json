@@ -7,6 +7,12 @@
         "excludedTypes": "Request"
       },
       "enableLiveMetricsFilters": true
+    },
+    "logLevel": {
+      "SharepointToBlobFunctions*": "Information",
+      "Host.Results": "Error",
+      "Microsoft": "Information",
+      "Microsoft.Hosting.Lifetime": "Information"
     }
   },
   "concurrency": {

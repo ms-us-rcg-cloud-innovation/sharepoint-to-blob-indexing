@@ -25,6 +25,8 @@ namespace SharepointToBlob
                 if (message is null)
                     throw new ArgumentNullException(nameof(message));
 
+                _logger.LogInformation("Function triggered. Message: {message}", message);
+
                 await _processor.ProcessAsync(message.ToContext()); ;
             }
             catch (Exception ex)

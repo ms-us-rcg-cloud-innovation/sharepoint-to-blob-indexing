@@ -5,7 +5,7 @@
             "Add_a_message_to_queue": {
                 "inputs": {
                     "parameters": {
-                        "message": "@outputs('Compose_Queue_Message_Content')",
+                        "message": "@base64(outputs('Compose_Queue_Message_Content'))",
                         "queueName": "@parameters('azure_storage_queue_name')"
                     },
                     "serviceProviderConfiguration": {
@@ -24,7 +24,7 @@
             "Compose_Queue_Message_Content": {
                 "inputs": {
                     "page_id": "@outputs('Get_PageId_from_ETag')",
-                    "site_id": "@{parameters('sharepoint_site_id')}"
+                    "site_id": "@parameters('sharepoint_site_id')"
                 },
                 "runAfter": {
                     "Get_PageId_from_ETag": [
