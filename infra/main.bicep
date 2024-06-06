@@ -37,14 +37,6 @@ param sharepointSiteUrl string
 @description('Sharepoint list name')
 param sharepointListName string
 
-@minLength(1)
-param sharepointUserName string
-
-@secure()
-@minLength(1)
-param sharepointPassword string
-
-
 var tags = {
   'azd-env-name': environmentName
 }

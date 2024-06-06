@@ -10,6 +10,3 @@ param sharepointGraphClientSecret = readEnvironmentVariable('AZURE_SHAREPOINT_GR
 param sharepointSiteId =  readEnvironmentVariable('SHAREPOINT_SITE_ID')
 param sharepointSiteUrl =  readEnvironmentVariable('SHAREPOINT_SITE_URL')
 param sharepointListName =  readEnvironmentVariable('SHAREPOINT_LIST_NAME')
-
-param sharepointUserName =  readEnvironmentVariable('SHAREPOINT_USERNAME')
-param sharepointPassword =  readEnvironmentVariable('SHAREPOINT_PASSWORD')

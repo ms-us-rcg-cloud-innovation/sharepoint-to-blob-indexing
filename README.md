@@ -48,8 +48,6 @@ $env:AZURE_SHAREPOINT_GRAPH_CLIENT_SECRET="<value>"
 $env:SHAREPOINT_SITE_ID="<value>" # unique guid for the site
 $env:SHAREPOINT_SITE_URL="<value>" # url to sharepoint site
 $env:SHAREPOINT_LIST_NAME="<value>" # list / folder name to monitor for indexing
-$env:SHAREPOINT_USERNAME="<value>" # account username
-$env:SHAREPOINT_PASSWORD="<value>" # account password
 ```
 
 This project uses the [Azure Developer CLI](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) to quickly deploy and tear down the resources and application files in Azure for demo purposes.
@@ -74,7 +72,7 @@ In the Azure Portal, navigate to API Connections, select the 'sharepoint-online'
 
 ## Verify
 
-Verify the application by adding/editing files in the provided list/folder name in Sharepoint and then verifying the 'sp-file-to-blob' Logic App Workflow is triggered. This will place the file in the 'sptoblobcontainer' Container in the Storage Account. An Azure AI Search Indexer will run every few minutes and index the file from the Storage Account. A Lifecycle Management Rule will remove all files in the container after 1 day.
+Verify the application by adding/editing files in the provided list/folder name in Sharepoint and then verifying the 'sp-file-to-blob' Logic App Workflow is triggered. This will place the file in the 'sptoblobcontainer' Container in the Storage Account. The Azure AI Search Storage Indexer will run every few minutes and index the file from the Storage Account. A Lifecycle Management Rule will remove all files in the container after 1 day.
 
 A similar process applies to Pages in Sharepoint. Add/edit pages in the 'Site Pages' list to have those changes automatically indexed. The 'sp-page-to-blob' Logic App Workflow is triggered and will store the Sharepoint Site Id (from configuration) and the updated/added Page Id in a message on the 'sharepoint-pages' Azure Storage Queue. An Azure Function will pick up this message. The function will query Microsoft Graph API to pull the Page's details as well as the Page's Webparts. Using this Page data, the function will build out the Page as raw HTML and save to the Container for indexing.
 
