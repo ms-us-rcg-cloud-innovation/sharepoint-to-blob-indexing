@@ -47,7 +47,7 @@ namespace SharepointToBlobFunctions
 
             if (!string.IsNullOrWhiteSpace(page.Description))
             {
-                var descNode = HtmlNode.CreateNode($"<p>{page.Description}</p>");
+                var descNode = HtmlNode.CreateNode($"<p>Description: {page.Description}</p>");
                 node.AppendChild(descNode);
             }
 
