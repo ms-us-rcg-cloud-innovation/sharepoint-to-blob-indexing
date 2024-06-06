@@ -37,19 +37,15 @@ resource cognitiveServices 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
     name: 'S0'
   }
   properties: {
-    // networkAcls: !empty(networkAcls) ? {
-    //   defaultAction: contains(networkAcls, 'defaultAction') ? networkAcls.defaultAction : null
-    //   virtualNetworkRules: contains(networkAcls, 'virtualNetworkRules') ? networkAcls.virtualNetworkRules : []
-    //   ipRules: contains(networkAcls, 'ipRules') ? networkAcls.ipRules : []
-    // } : null
-   
+    networkAcls:  {
+      defaultAction: 'Allow'
+    }
     publicNetworkAccess: 'Enabled'
-    //allowedFqdnList: allowedFqdnList
     disableLocalAuth: true
     restore: false
-    //restrictOutboundNetworkAccess: restrictOutboundNetworkAccess
-    //userOwnedStorage: !empty(userOwnedStorage) ? userOwnedStorage : null
+    restrictOutboundNetworkAccess: false
     dynamicThrottlingEnabled: false
+    customSubDomainName: name
   }
 }
 
@@ -79,11 +75,27 @@ resource cogServicesUserRoleDefinition 'Microsoft.Authorization/roleDefinitions@
   name: 'a97b65f3-24c7-4388-baec-2e87135dc908'
 }
 
+@description('This is the built-in Cognitive Services Open AI User role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#security')
+resource cogServicesOpenAiRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+}
+
 resource cogServicesUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
   name: guid(cognitiveServices.id, managedIdentity.id, cogServicesUserRoleDefinition.id)
   scope: cognitiveServices
   properties: {
     roleDefinitionId: cogServicesUserRoleDefinition.id
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource cogServicesOpenAiRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(cognitiveServices.id, managedIdentity.id, cogServicesOpenAiRoleDefinition.id)
+  scope: cognitiveServices
+  properties: {
+    roleDefinitionId: cogServicesOpenAiRoleDefinition.id
     principalId: managedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
   }
@@ -98,5 +110,5 @@ resource openAIKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
 }
 
 output name string = cognitiveServices.name
-output endpoint string = 'https://${cognitiveServices.name}.openai.azure.com'
+output endpoint string = 'https://${cognitiveServices.properties.customSubDomainName}.openai.azure.com'
 output keySecretName string = openAIKeySecret.name

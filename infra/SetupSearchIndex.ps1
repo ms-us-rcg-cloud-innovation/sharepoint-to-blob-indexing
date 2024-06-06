@@ -4,21 +4,18 @@ param(
     [string] [Parameter(Mandatory=$true)] $searchIndexName,
     [string] [Parameter(Mandatory=$true)] $searchIndexerName,
     [string] [Parameter(Mandatory=$true)] $skillsetName,
-    [string] [Parameter(Mandatory=$true)] $storageAccountName,
+    [string] [Parameter(Mandatory=$true)] $managedIdentityResourceId,
+    [string] [Parameter(Mandatory=$true)] $storageAccountResourceId,
     [string] [Parameter(Mandatory=$true)] $storageContainerName,
     [string] [Parameter(Mandatory=$true)] $storageConnString,
     [string] [Parameter(Mandatory=$true)] $openAIEndpoint,
+    [string] [Parameter(Mandatory=$true)] $openAIEmbeddingsDeployment,
     [string] [Parameter(Mandatory=$true)] $openAIEmbeddingsModel,
-    [string] [Parameter(Mandatory=$true)] $openAIKey
+    [string] [Parameter(Mandatory=$true)] $openAIKey,
+    [string] [Parameter(Mandatory=$true)] $apiversion
 )
 
 $ErrorActionPreference = 'Stop'
-
-$apiversion = '2024-03-01-preview'
-# http://169.254.169.254/metadata/identity/oauth2/token
-# Invoke-WebRequest -Uri "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$apiversion&resource=https%3A%2F%search.azure.com%2F" -Headers @{ Metadata="true" }
-# $content =$response.Content | ConvertFrom-Json
-# $token = $content.access_token
 
 $token = Get-AzAccessToken -ResourceUrl "https://search.azure.com"
 $access_token = $token.Token
@@ -62,8 +59,8 @@ $skillsetPayloadJson = @"
         "description": null,
         "context": "/document/chunks/*",
         "resourceUri": "$openAIEndpoint",
-        "apiKey": "$openAIKey",
-        "deploymentId": "$openAIEmbeddingsModel",
+        "deploymentId": "$openAIEmbeddingsDeployment",
+        "modelName": "$openAIEmbeddingsModel",
         "inputs": [
             {
             "name": "text",
@@ -76,19 +73,58 @@ $skillsetPayloadJson = @"
             "targetName": "vector"
             }
         ],
-        "authIdentity": null
+        "authIdentity": {
+            "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
+            "userAssignedIdentity": "$managedIdentityResourceId"
+        }
     }
-  ]
+  ],
+  "indexProjections": {
+    "selectors": [
+      {
+        "targetIndexName": "$searchIndexName",
+        "parentKeyFieldName": "ParentKey",
+        "sourceContext": "/document/chunks/*",
+        "mappings": [
+          {
+            "name": "sourceuri",
+            "source": "/document/sourceuri",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "chunk",
+            "source": "/document/chunks/*",
+            "sourceContext": null,
+            "inputs": []
+          },
+          {
+            "name": "chunkVector",
+            "source": "/document/chunks/*/vector",
+            "sourceContext": null,
+            "inputs": []
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "projectionMode": "skipIndexingParentDocuments"
+    }
+  }
 }
 "@
 
 $dataSourcePayloadJson = @"
 {
   "name": "$dataSourceName",
-  "description": "Container $storageContainerName in Storage account $storageAccountName",
+  "description": "Container $storageContainerName in Storage account $storageAccountResourceId",
   "type": "azureblob",
   "credentials": {
-    "connectionString": "$storageConnString"
+    "connectionString": "ResourceId=$storageAccountResourceId;"
+  },
+  "identity": {
+    "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
+    "userAssignedIdentity": "$managedIdentityResourceId"
   },
   "container": {
     "name": "$storageContainerName"
@@ -234,9 +270,12 @@ $indexPayloadJson = @"
                 "kind": "azureOpenAI",
                 "azureOpenAIParameters": {
                     "resourceUri": "$openAIEndpoint",
-                    "deploymentId": "$openAIEmbeddingsModel",
-                    "apiKey": "$openAIKey",
-                    "authIdentity": null
+                    "deploymentId": "$openAIEmbeddingsDeployment",
+                    "modelName": "$openAIEmbeddingsModel",
+                    "authIdentity": {
+                        "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
+                        "userAssignedIdentity": "$managedIdentityResourceId"
+                    }
                 },
                 "customWebApiParameters": null
             }

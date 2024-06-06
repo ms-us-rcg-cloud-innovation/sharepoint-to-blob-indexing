@@ -33,3 +33,4 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-
 
 output deploymentId string = modelDeployment.id
 output deploymentName string = modelDeployment.name
+output modelName string = modelDeployment.properties.model.name

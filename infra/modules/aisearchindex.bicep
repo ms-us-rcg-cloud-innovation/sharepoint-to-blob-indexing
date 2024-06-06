@@ -2,8 +2,10 @@ param searchServiceName string
 param location string
 param tags object
 
+param managedIdentityResourceId string
+
 param dataSourceName string
-param storageAccountName string
+param storageAccountResourceId string
 param storageContainerName string
 param searchIndexName string
 param searchIndexerName string
@@ -13,6 +15,7 @@ param skillsetName string
 param storageConnString string
 
 param openAIEndpoint string
+param openAIEmbeddingsDeployment string
 param openAIEmbeddingsModel string
 
 @secure()
@@ -47,8 +50,9 @@ resource indexContributorRoleAssignment 'Microsoft.Authorization/roleAssignments
 var scriptArgs = {
   searchArgs: '-searchServiceName \\"${searchServiceName}\\"'
   indexArgs: '-dataSourceName \\"${dataSourceName}\\" -searchIndexName \\"${searchIndexName}\\" -searchIndexerName \\"${searchIndexerName}\\" -skillsetName \\"${skillsetName}\\"'
-  storageArgs: '-storageAccountName \\"${storageAccountName}\\" -storageContainerName \\"${storageContainerName}\\" -storageConnString \\"${storageConnString}\\"'
-  openAIArgs: '-openAIEndpoint \\"${openAIEndpoint}\\" -openAIEmbeddingsModel \\"${openAIEmbeddingsModel}\\" -openAIKey \\"${openAIKey}\\"'
+  storageArgs: '-storageAccountResourceId \\"${storageAccountResourceId}\\" -storageContainerName \\"${storageContainerName}\\" -storageConnString \\"${storageConnString}\\"'
+  openAIArgs: '-openAIEndpoint \\"${openAIEndpoint}\\" -openAIEmbeddingsDeployment \\"${openAIEmbeddingsDeployment}\\" -openAIEmbeddingsModel \\"${openAIEmbeddingsModel}\\" -openAIKey \\"${openAIKey}\\"'
+  apiArgs: '-apiversion \\"2024-05-01-preview\\" -managedIdentityResourceId \\"${managedIdentityResourceId}\\"'
 }
 
 resource setupSearchService 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
@@ -64,7 +68,7 @@ resource setupSearchService 'Microsoft.Resources/deploymentScripts@2020-10-01' =
   properties: {
     azPowerShellVersion: '8.3'
     timeout: 'PT30M'
-    arguments: '${scriptArgs.searchArgs} ${scriptArgs.indexArgs} ${scriptArgs.storageArgs} ${scriptArgs.openAIArgs}'
+    arguments: '${scriptArgs.searchArgs} ${scriptArgs.indexArgs} ${scriptArgs.storageArgs} ${scriptArgs.openAIArgs} ${scriptArgs.apiArgs}'
     scriptContent: loadTextContent('../SetupSearchIndex.ps1')
     cleanupPreference: 'OnSuccess'
     retentionInterval: 'P1D'

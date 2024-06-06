@@ -12,14 +12,14 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
   name: managedIdentityName
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: name
   location: location
   tags: tags
   sku: {
     name: 'Standard_LRS'
   }
-  kind: 'Storage'
+  kind: 'StorageV2'
   properties: {}
 }
 
@@ -110,6 +110,40 @@ resource queueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignm
   }
 }
 
+resource lifecycleRemoveBlobs 'Microsoft.Storage/storageAccounts/managementPolicies@2023-01-01' = {
+  name: 'default'
+  parent: storageAccount
+  properties: {
+    policy: {
+      rules: [
+        {
+          definition: {
+            actions: {
+              baseBlob: {
+                delete: {
+                  daysAfterModificationGreaterThan: 1
+                }
+              }
+            }
+            filters: {
+              blobTypes: [
+                'blockBlob'
+              ]
+              prefixMatch: [
+                '${blobContainer.name}/'
+              ]
+            }
+          }
+          enabled: true
+          name: 'remove-sharepoint-indexed-blobs'
+          type: 'Lifecycle'
+        }
+      ]
+    }
+  }
+}
+
+output id string = storageAccount.id
 output storageAccountName string = storageAccount.name
 output fileShareName string = fileShare.name
 output blobContainerName string = blobContainer.name

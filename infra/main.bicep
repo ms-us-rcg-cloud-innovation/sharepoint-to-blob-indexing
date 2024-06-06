@@ -14,16 +14,16 @@ param location string
 
 @minLength(1)
 @description('Tenant Id for MS Graph app registration')
-param tenantId string
+param sharepointGraphTenantId string
 
 @minLength(1)
 @description('Client Id for MS Graph app registration')
-param clientId string
+param sharepointGraphClientId string
 
 @secure()
 @minLength(1)
 @description('Client Secret for MS Graph app registration')
-param clientSecret string
+param sharepointGraphClientSecret string
 
 @minLength(1)
 @description('Sharepoint site id')
@@ -86,7 +86,7 @@ module keyVault 'modules/keyvault.bicep' = {
   ]
   params: {
     keyVaultName: 'kv${resourceToken}'
-    tenantId: tenantId
+    tenantId: subscription().tenantId
     location: location
     tags: tags
     logAnalyticsWorkspaceName: logging.outputs.logAnalyticsWorkspaceName
@@ -125,26 +125,11 @@ module openAI 'modules/openai.bicep' = {
   }
 }
 
-module aiModelGPTDeployment  'modules/openaideployment.bicep' = {
-    name: 'ai-model-gpt-${environmentName}-deployment'
-    scope: rg
-    dependsOn:[
-      openAI
-    ]
-    params: {
-      openAiName: openAI.outputs.name
-      deploymentName: 'ai-model-gpt-${resourceToken}'
-      modelName: 'gpt-35-turbo'
-      modelVersion: '0613'
-    }
-}
-
 module aiModelEmbedDeployment  'modules/openaideployment.bicep' = {
   name: 'ai-model-embed-${environmentName}-deployment'
   scope: rg
   dependsOn:[
     openAI
-    aiModelGPTDeployment // depends on other model to prevent operation conflicts
   ]
   params: {
     openAiName: openAI.outputs.name
@@ -177,7 +162,6 @@ module searchIndex 'modules/aisearchindex.bicep' = {
   dependsOn:[
     search
     openAI
-    aiModelGPTDeployment
     aiModelEmbedDeployment
     storageAccount
     keyVault
@@ -190,11 +174,13 @@ module searchIndex 'modules/aisearchindex.bicep' = {
     searchIndexerName: 'idxr-sp-${sharepointSiteId}'
     dataSourceName: 'ds-sp-blob-${sharepointSiteId}'
     skillsetName: 'split'
-    storageAccountName: storageAccount.outputs.storageAccountName
+    managedIdentityResourceId: managedIdentity.outputs.id
+    storageAccountResourceId: storageAccount.outputs.id
     storageContainerName: storageAccount.outputs.blobContainerName
     storageConnString: kv.getSecret(storageAccount.outputs.connStringSecretName)
     openAIEndpoint: openAI.outputs.endpoint
-    openAIEmbeddingsModel: aiModelEmbedDeployment.outputs.deploymentName
+    openAIEmbeddingsDeployment: aiModelEmbedDeployment.outputs.deploymentName
+    openAIEmbeddingsModel: aiModelEmbedDeployment.outputs.modelName
     openAIKey: kv.getSecret(openAI.outputs.keySecretName)
   }
 }
@@ -261,9 +247,9 @@ module functionApp 'modules/functionapp.bicep' = {
     managedIdentityName: managedIdentity.outputs.managedIdentityName
     storageAcctConnStringName: storageAccount.outputs.connStringSecretName
     fileShareName: storageAccount.outputs.fileShareName
-    tenantId: tenantId 
-    clientId: clientId 
-    clientSecret: clientSecret
+    tenantId: sharepointGraphTenantId 
+    clientId: sharepointGraphClientId
+    clientSecret: sharepointGraphClientSecret
     storageAcctContainerName: storageAccount.outputs.blobContainerName
     sharepointSiteId: sharepointSiteId
   }
@@ -271,7 +257,7 @@ module functionApp 'modules/functionapp.bicep' = {
 
 output AZURE_RESOURCE_GROUP_NAME string = rg.name
 output AZURE_LOCATION string = location
-output AZURE_TENANT_ID string = tenantId
+output AZURE_TENANT_ID string = subscription().tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
 output AZURE_LOGIC_APP_NAME string = logicApp.outputs.logicAppName
 output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.functionAppName
