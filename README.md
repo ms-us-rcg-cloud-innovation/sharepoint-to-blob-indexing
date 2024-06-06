@@ -8,7 +8,7 @@ This repository contains code and instructions for indexing files and pages from
 
 ## Project Folder Descriptions
 
-1. CreateAzureAIComponents: .NET console application to assist in provisioning and tearing down the Azure AI resources. Note: This solution is relatively temporary and will be superceded by standard IaC tools like Bicep/Terraform.
+1. assets: documentation files and images (architecture)
 2. infra: IaC Bicep code to deploy Azure resources
 3. scripts: holds PS scripts to help with automation
 4. src/Apps/SharepointToBlobFunctions: .NET Azure Function for processing Sharepoint Page contents and saving as HTML file. Triggered by a storage queue.
