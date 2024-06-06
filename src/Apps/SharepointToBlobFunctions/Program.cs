@@ -9,13 +9,6 @@ using SharepointToBlobFunctions;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
-    //.ConfigureLogging(logging =>
-    //{
-    
-    //    logging.AddFilter("Microsoft", LogLevel.Warning)
-    //           .AddFilter("System", LogLevel.Warning)
-    //           .AddFilter("SharepointToBlobFunctions", LogLevel.Information);
-    //})
     .ConfigureServices(services => {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
