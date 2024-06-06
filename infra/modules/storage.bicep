@@ -70,14 +70,6 @@ resource storageAccountConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets
   }
 }
 
-resource storageAccountKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
-  parent: keyVault
-  name: 'sa-key'
-  properties: {
-    value: accountKey
-  }
-}
-
 @description('This is the built-in Storage Blob Data Contributor role. See https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#security')
 resource storageBlobDataContributorRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()
@@ -148,6 +140,4 @@ output storageAccountName string = storageAccount.name
 output fileShareName string = fileShare.name
 output blobContainerName string = blobContainer.name
 output connStringSecretName string = storageAccountConnectionStringSecret.name
-output keySecretName string = storageAccountKeySecret.name
 output endpoint string = 'https://${storageAccount.name}.blob.${environment().suffixes.storage}'
-

@@ -76,7 +76,7 @@ In the Azure Portal, navigate to API Connections, select the 'sharepoint-online'
 
 Verify the application by adding/editing files in the provided list/folder name in Sharepoint and then verifying the 'sp-file-to-blob' Logic App Workflow is triggered. This will place the file in the 'sptoblobcontainer' Container in the Storage Account. An Azure AI Search Indexer will run every few minutes and index the file from the Storage Account. A Lifecycle Management Rule will remove all files in the container after 1 day.
 
-A similar process applies to Pages in Sharepoint. Add/edit pages in the 'Site Pages' list to have those changes automatically indexed. The 'sp-page-to-blob' Logic App Workflow is triggered and will store the Sharepoint Site Id (from configuration) and the updated/added Page Id in an Azure Storage Queue message. An Azure Function will pick up this message. The function will query Microsoft Graph API to pull the Page's details as well as the Page's Webparts. Using this Page data, the function will build out the Page as raw HTML and save to the Container for indexing.
+A similar process applies to Pages in Sharepoint. Add/edit pages in the 'Site Pages' list to have those changes automatically indexed. The 'sp-page-to-blob' Logic App Workflow is triggered and will store the Sharepoint Site Id (from configuration) and the updated/added Page Id in a message on the 'sharepoint-pages' Azure Storage Queue. An Azure Function will pick up this message. The function will query Microsoft Graph API to pull the Page's details as well as the Page's Webparts. Using this Page data, the function will build out the Page as raw HTML and save to the Container for indexing.
 
 ## Clean Up Azure Resources
 

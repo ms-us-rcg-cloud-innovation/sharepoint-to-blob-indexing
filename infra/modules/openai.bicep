@@ -101,14 +101,5 @@ resource cogServicesOpenAiRoleAssignment 'Microsoft.Authorization/roleAssignment
   }
 }
 
-resource openAIKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
-  parent: keyVault
-  name: 'openai-key'
-  properties: {
-    value: cognitiveServices.listKeys().key1
-  }
-}
-
 output name string = cognitiveServices.name
 output endpoint string = 'https://${cognitiveServices.properties.customSubDomainName}.openai.azure.com'
-output keySecretName string = openAIKeySecret.name

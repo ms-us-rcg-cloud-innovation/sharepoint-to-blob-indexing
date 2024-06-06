@@ -151,11 +151,6 @@ module search 'modules/aisearch.bicep' = {
   }
 }
 
-resource kv 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
-  name: keyVault.outputs.keyVaultName
-  scope: rg
-}
-
 module searchIndex 'modules/aisearchindex.bicep' = {
   name: 'ai-search-index-${environmentName}-deployment'
   scope: rg
@@ -168,6 +163,7 @@ module searchIndex 'modules/aisearchindex.bicep' = {
   ]
   params: {
     searchServiceName: search.outputs.name
+    apiVersion: '2024-05-01-preview'
     location: location
     tags: tags
     searchIndexName: 'idx-sp-${sharepointSiteId}'
@@ -177,11 +173,9 @@ module searchIndex 'modules/aisearchindex.bicep' = {
     managedIdentityResourceId: managedIdentity.outputs.id
     storageAccountResourceId: storageAccount.outputs.id
     storageContainerName: storageAccount.outputs.blobContainerName
-    storageConnString: kv.getSecret(storageAccount.outputs.connStringSecretName)
     openAIEndpoint: openAI.outputs.endpoint
     openAIEmbeddingsDeployment: aiModelEmbedDeployment.outputs.deploymentName
     openAIEmbeddingsModel: aiModelEmbedDeployment.outputs.modelName
-    openAIKey: kv.getSecret(openAI.outputs.keySecretName)
   }
 }
 
@@ -196,11 +190,8 @@ module sharepointConnection 'modules/sharepointconnection.bicep' = {
     location: location
     tags: tags
     managedIdentityName: managedIdentity.outputs.managedIdentityName
-    username: sharepointUserName
-    password: sharepointPassword
   }
 }
-
 
 module logicApp 'modules/logicapp.bicep' = {
   name: 'logic-app-${environmentName}-deployment'

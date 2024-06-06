@@ -2,11 +2,6 @@ param connectionName string = 'sharepointonline'
 param location string
 param tags object
 
-param username string
-
-@secure()
-param password string
-
 param managedIdentityName string
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2021-09-30-preview' existing = {
@@ -24,8 +19,8 @@ resource connection 'Microsoft.Web/connections@2016-06-01' = {
     }
     displayName: '${connectionName}-connection'
     parameterValues: {
-      UserName : username
-      Password : password
+      UserName : 'username_placeholder'
+      Password : 'password_placeholder'
     }
   }
 }

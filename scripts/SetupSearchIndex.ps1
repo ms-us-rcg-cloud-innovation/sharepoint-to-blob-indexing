@@ -7,11 +7,9 @@ param(
     [string] [Parameter(Mandatory=$true)] $managedIdentityResourceId,
     [string] [Parameter(Mandatory=$true)] $storageAccountResourceId,
     [string] [Parameter(Mandatory=$true)] $storageContainerName,
-    [string] [Parameter(Mandatory=$true)] $storageConnString,
     [string] [Parameter(Mandatory=$true)] $openAIEndpoint,
     [string] [Parameter(Mandatory=$true)] $openAIEmbeddingsDeployment,
     [string] [Parameter(Mandatory=$true)] $openAIEmbeddingsModel,
-    [string] [Parameter(Mandatory=$true)] $openAIKey,
     [string] [Parameter(Mandatory=$true)] $apiversion
 )
 
